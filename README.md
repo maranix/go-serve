@@ -39,43 +39,39 @@ sequenceDiagram
     participant Handler as internal/handlers
 
     rect rgb(238, 255, 238)
-        note over Client,Handler: Request Flow
-        Client->>+Main: HTTP Request
-        Main->>Config: Load Configuration (Env Vars)
-        activate Config
+        note over Client,Handler: Application Lifecycle
+        Client->>+Main: Start Application / Incoming Request
+        activate Main
+
+        Main->>+Config: Load Configuration (Env Vars)
         Config-->>-Main: App Config
         deactivate Config
 
-        Main->>+Server: Initialize (Config, Logger)
+        Main->>+Server: Initialize HTTP Server (Config, Logger)
         activate Server
-        Server->>Middleware: Apply Chain (RequestID, Logger, Recovery)
-        activate Middleware
+        Server->>+Middleware: Apply Global Middleware Chain (RequestID, Logger, Recovery)
         Middleware->>Router: Register Routes
         deactivate Middleware
-        Server-->>-Main: HTTP Server Instance
-        deactivate Server
+        note over Server: Server Listening
 
-        note over Client,Handler: Request Processing
-        Client->>+Server: Incoming Request
+        Client-->>Server: HTTP Request
         Server->>+Middleware: Process Request
         Middleware->>+Router: Route Request
         Router->>+Handler: Execute Handler Logic
         Handler-->>-Router: HTTP Response (JSON)
-        Router-->>-Middleware: Forward Response
-        Middleware-->>-Server: Send Response
-        Server-->>-Client: HTTP Response
         deactivate Handler
         deactivate Router
         deactivate Middleware
-    end
+        deactivate Server
+        
+        note over Main: Application Running
 
-    rect rgb(255, 238, 238)
-        note over Main,Server: Graceful Shutdown
         Main->>+Main: OS Signal (SIGINT/SIGTERM)
-        Main->>Server: Shutdown (Context Timeout)
+        Main->>Server: Initiate Graceful Shutdown
         activate Server
         Server-->>-Main: Server Stopped
         deactivate Server
+        deactivate Main
     end
 ```
 
