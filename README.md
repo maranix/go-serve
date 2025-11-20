@@ -23,6 +23,24 @@ sequenceDiagram
 
 ## Getting Started
 
+### Using this Template
+
+To start a new project using `go-serve` as a template, it's recommended to clone the latest release tag to get a clean, stable starting point.
+
+```bash
+# Replace v1.0.0 with the desired release tag
+git clone --depth 1 --branch v1.0.0 https://github.com/maranix/go-serve.git my-new-project
+cd my-new-project
+
+# Remove the .git directory to start a fresh Git history
+rm -rf .git
+
+# Initialize your new Git repository
+git init
+git add .
+git commit -m "feat: initial commit from go-serve template"
+```
+
 ### Prerequisites
 - Go 1.25+
 
