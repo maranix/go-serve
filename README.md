@@ -41,6 +41,23 @@ git add .
 git commit -m "feat: initial commit from go-serve template"
 ```
 
+### Using the Setup Script
+
+For an even quicker setup in an empty or newly initialized Git repository, you can use the `setup-template.sh` script:
+
+1.  **Download the script:**
+    ```bash
+    curl -LJO https://raw.githubusercontent.com/maranix/go-serve/main/setup-template.sh
+    chmod +x setup-template.sh
+    ```
+    (Note: Replace `main` with `v1.0.0` or your desired release branch/tag if you want to use a specific version of the script.)
+
+2.  **Run the script:**
+    ```bash
+    ./setup-template.sh
+    ```
+    This script will automatically clone the template, copy the files, and perform an initial Git commit for you.
+
 ### Prerequisites
 - Go 1.25+
 
