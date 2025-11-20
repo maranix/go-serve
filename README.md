@@ -40,36 +40,47 @@ sequenceDiagram
 
     rect rgb(238, 255, 238)
         note over Client,Handler: Application Lifecycle
-        Client->>+Main: Start Application / Incoming Request
+
+        Client->>Main: Start Application / Incoming Request
         activate Main
 
-        Main->>+Config: Load Configuration (Env Vars)
-        Config-->>-Main: App Config
+        Main->>Config: Load Configuration (Env Vars)
+        activate Config
+        Config-->>Main: App Config
         deactivate Config
 
-        Main->>+Server: Initialize HTTP Server (Config, Logger)
+        Main->>Server: Initialize HTTP Server (Config, Logger)
         activate Server
-        Server->>+Middleware: Apply Global Middleware Chain (RequestID, Logger, Recovery)
+        Server->>Middleware: Apply Global Middleware Chain (RequestID, Logger, Recovery)
+        activate Middleware
         Middleware->>Router: Register Routes
         deactivate Middleware
         note over Server: Server Listening
+        deactivate Server
 
-        Client-->>Server: HTTP Request
-        Server->>+Middleware: Process Request
-        Middleware->>+Router: Route Request
-        Router->>+Handler: Execute Handler Logic
-        Handler-->>-Router: HTTP Response (JSON)
+        Client->>Server: HTTP Request
+        activate Server
+        Server->>Middleware: Process Request
+        activate Middleware
+        Middleware->>Router: Route Request
+        activate Router
+        Router->>Handler: Execute Handler Logic
+        activate Handler
+        Handler-->>Router: HTTP Response (JSON)
         deactivate Handler
+        Router-->>Middleware: Forward Response
         deactivate Router
+        Middleware-->>Server: Send Response
         deactivate Middleware
+        Server-->>Client: HTTP Response
         deactivate Server
         
         note over Main: Application Running
 
-        Main->>+Main: OS Signal (SIGINT/SIGTERM)
+        Main->>Main: OS Signal (SIGINT/SIGTERM)
         Main->>Server: Initiate Graceful Shutdown
         activate Server
-        Server-->>-Main: Server Stopped
+        Server-->>Main: Server Stopped
         deactivate Server
         deactivate Main
     end
