@@ -10,19 +10,29 @@ A lightweight, production-ready, zero-dependency scaffold for building high-perf
 
 *   **cmd/**: Contains the main application entry points.
     *   `cmd/api/main.go`: The primary executable for the HTTP API service, responsible for bootstrapping the application, loading configuration, initializing the server, and handling graceful shutdown.
+      
 *   **internal/**: Houses private application logic that is not intended for public consumption by other Go projects. This prevents other projects from importing these internal packages, enforcing a clear boundary.
+
     *   `internal/config/`: Manages environment variable parsing and application configuration using only the standard library's `os` package. It ensures critical configurations are present or sensible defaults are applied.
+
     *   `internal/server/`: Encapsulates the HTTP server setup, including route definitions, server instance creation, and the graceful shutdown mechanism using `os/signal` and `context.WithTimeout`.
+
     *   `internal/middleware/`: Provides custom standard library HTTP middleware for cross-cutting concerns such as structured logging (`log/slog`), request ID generation, and panic recovery.
+
     *   `internal/handlers/`: Contains the HTTP handler functions that implement the application's business logic. These handlers are designed to be "zero global state," meaning configuration and logger instances are injected into the server and then passed to handlers, promoting testability and clarity.
+
 *   **pkg/**: Intended for public library code that *can* be safely used by external applications or other projects within a larger monorepo. (Currently empty, as per the minimalist philosophy, but available for future expansion).
 
 ### Core Architectural Principles
 
 1.  **Standard Library First:** `go-serve` is built almost exclusively on Go's standard library (`net/http`, `log/slog`, `os`, `context`, `os/signal`, etc.), minimizing external dependencies and supply chain risk.
+
 2.  **Zero Global State:** Configuration and `log/slog` logger instances are explicitly injected into the `Server` struct and subsequently passed down to middleware and handlers. This design choice enhances testability, reduces side effects, and improves code clarity.
+
 3.  **Extensibility as a Blank Canvas:** The template provides a robust foundation without imposing specific database, message queue, or external client choices. Developers are guided on *where* to integrate such components (e.g., in `internal/store` for database logic).
+
 4.  **Observability Built-in:** Structured JSON logging (`log/slog`) and metrics-readiness are fundamental components, integrated via middleware, to provide immediate insights into application behavior.
+
 5.  **Graceful Shutdown:** The server is configured to handle `SIGINT` and `SIGTERM` signals, allowing for a controlled shutdown to complete ongoing requests and release resources, ensuring data integrity during deployments or restarts.
 
 
@@ -179,30 +189,25 @@ The server inside the container will be accessible on port 8080 of your host mac
     }
 
     // Add your database methods here...
-    // func (s *Store) GetUser(id string) (*User, error) { ... }
+    func (s *Store) GetUser(id string) (*User, error) { ... }
     ```
 
 2.  **Instantiate in `main.go`:**
     In `cmd/api/main.go`, instantiate your database connection and pass it to your new store.
 
     ```go
-    // cmd/api/main.go
-    // ...
-    // import "go-serve/internal/store"
-
     func main() {
         // ... (config and logger setup)
 
         // Example for PostgreSQL
-        // connStr := "user=... password=... dbname=... sslmode=disable"
-        // db, err := sql.Open("postgres", connStr)
-        // if err != nil {
-        //     logger.Error("failed to connect to database", "error", err)
-        //     os.Exit(1)
-        // }
-        //
-        // dbStore := store.New(db)
-
+        connStr := "user=... password=... dbname=... sslmode=disable"
+        db, err := sql.Open("postgres", connStr)
+        if err != nil {
+            logger.Error("failed to connect to database", "error", err)
+            os.Exit(1)
+        }
+        
+        dbStore := store.New(db)
         // ...
     }
     ```
@@ -212,16 +217,12 @@ The server inside the container will be accessible on port 8080 of your host mac
 
     First, update `internal/server/server.go`:
     ```go
-    internal/server/server.go
-    ...
-    <!-- import "go-serve/internal/store" -->
-
     type Server struct {
         //...
         store *store.Store
     }
 
-    Update New() to accept the store
+    // Update New() to accept the store
     func New(store *store.Store, ...) *Server {
     ...
     s := &Server{
@@ -232,33 +233,35 @@ The server inside the container will be accessible on port 8080 of your host mac
 
     Next, modify your handlers to be methods on a handler struct that holds the store.
     ```go
-    <!-- internal/server/routes.go -->
-
-    Create a handler struct
+    // Create a handler struct
     type Handlers struct {
         store *store.Store
         logger *slog.Logger
     }
 
-    Example handler method
+    // Example handler method
     func (h *Handlers) HandleGetUser(w http.ResponseWriter, r *http.Request) {
-        // user, err := h.store.GetUser(...)
+        user, err := h.store.GetUser(...)
         // ...
     }
 
-    In server.routes()
+    // In server.routes()
     func (s *Server) routes() {
        handlers := &Handlers{logger: s.logger}
        s.mux.HandleFunc("GET /users/{id}", handlers.HandleGetUser)
     }
     ```
     
-    This comprehensive example demonstrates how to integrate a database into your `go-serve` application. Remember to adapt the connection string and repository logic to your specific database and application needs. This pattern ensures a clean separation of concerns and maintainable code.
+    This example demonstrates how to integrate a database into your `go-serve` application. Remember to adapt the connection string and repository logic to your specific database and application needs.
 
 ## Contributing
 
-We welcome contributions to `go-serve`! Please see our [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to get started, our code of conduct, and submission process.
+Contributions to `go-serve` are welcome!
+
+Please see our [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to get started, our code of conduct, and submission process.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License
+
+See the [LICENSE](LICENSE) file for details.
